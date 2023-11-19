@@ -1,0 +1,58 @@
+--[[
+    Script Name:        [on label] Drop loot to ground
+    Description:        Quando o personagem no walker alcançar a label "drop", ele soltará itens de uma mochila específica no chão.
+    Author:             Ascer - exemplo
+]]
+
+local config = {
+    label_name = "drop",                    -- realizar esta ação nesta label atual do walker.
+    pos = {x = 33565, y = 32904, z = 6},     -- posição onde os itens serão soltos no chão.
+    container_index = 0,                     -- soltar itens da mochila de índice (padrão = 0, primeira mochila aberta)
+    items = {2663},                          -- itens a serem soltos.
+    open_next_bp = false                     -- true/false abrir próxima mochila quando não houver mais itens para soltar na atual.
+}
+
+-- NÃO EDITE ABAIXO
+
+function signal(label)
+    if label == config.label_name then
+        while true do
+            -- Esperar para evitar travamentos do programa.
+            wait(200, 400)
+
+            -- Verificar se o contêiner está aberto.
+            local cont = <link>Container.getInfo</link>(config.container_index)
+            if not cont.isOpen then
+                -- Mostrar erro
+                print("Drop Items: o contêiner de índice " .. config.container_index .. " está fechado.")
+                return
+            end
+
+            -- Verificar se há itens para soltar.
+            local item = <link>Container.FindItem</link>(config.items, config.container_index)
+            if item.id ~= 0 then
+                -- Soltar itens no chão com um pequeno atraso aleatório.
+                <link>Self.DropItem</link>(config.pos.x, config.pos.y, config.pos.z, item.id, item.count, math.random(500, 700))
+                wait(200, 400) -- Aguardar um breve momento após soltar os itens.
+            else
+                -- Verificar se a opção de abrir a próxima mochila está ativada.
+                if config.open_next_bp then
+                    -- Verificar se há um contêiner para abrir.
+                    local contItems = <link>Container.getItems</link>(config.container_index)
+                    for i, item in ipairs(contItems) do
+                        -- Verificar se o item é um contêiner.
+                        if <link>Item.hasAttribute</link>(item.id, ITEM_FLAG_CONTAINER) then
+                            -- Abrir o contêiner com um pequeno atraso.
+                            <link>Container.UseItem</link>(config.container_index, (i - 1), item.id, false, math.random(800, 1200))
+                            return -- Encerrar a função após abrir o contêiner.
+                        end
+                    end
+                end
+                return -- Encerrar a função quando não há itens para soltar e a próxima mochila não será aberta.
+            end
+        end
+    end
+end
+
+-- Chamar a função quando a label for alcançada.
+<link>Walker.onLabel</link>("signal")
